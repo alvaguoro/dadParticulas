@@ -1,1 +1,340 @@
+#include <Arduino.h>
+#include "ArduinoJson.h"
+#include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
+#include <SoftwareSerial.h>
+
+char responseBuffer[300];
+WiFiClient client;
+
+String SSID="JM63";
+String PASS="@j63mr655jtAEFpFN7kb";
+
+String SERVER_IP="192.168.1.133";
+int SERVER_PORT= 8081;
+
+void sendGetActuadorAlarmaValue();
+void sendPostActuadorAlarmaValue();
+
+void sendGetActuadorLcdValue();
+void sendPostActuadorLcdValue();
+
+void sendGetSensorParticulaValue();
+void sendPostSensorParticulaValue();
+
+void sendGetSensorDHT11Value();
+void sendPostSensorDHT11Value();
+
+
+void setup() {
+  Serial.begin(9600);
+
+  WiFi.begin(SSID, PASS);
+
+  Serial.print("Connecting...");
+  while (WiFi.status() != WL_CONNECTED){
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.print("Connected, IP address: ");
+  Serial.print(WiFi.localIP());
+}
+void loop() {
+  sendGetActuadorAlarmaValue();
+  delay(1000);
+  sendPostActuadorAlarmaValue();
+  delay(1000);
+  sendGetActuadorLcdValue();
+  delay(1000);
+  sendPostActuadorLcdValue();
+  delay(1000);
+  sendGetSensorParticulaValue();
+  delay(1000);
+  sendPostSensorParticulaValue();
+  delay(1000);
+  sendGetSensorDHT11Value();
+  delay(1000);
+  sendPostSensorDHT11Value();
+  delay(1000);
+
+
+}
+//-----------------------------------------------------------------------------
+
+
+
+
+void sendGetActuadorAlarmaValue(){
+  if (WiFi.status() == WL_CONNECTED){
+    HTTPClient http;
+    http.begin(client, SERVER_IP, SERVER_PORT, "/api/actuador/actuadorAlarmaValue/1", true);
+    int httpCode = http.GET();
+
+    Serial.println("Response code: " + httpCode);
+
+    String payload = http.getString();
+
+    const size_t capacity = JSON_OBJECT_SIZE(5) + JSON_ARRAY_SIZE(5) + 1000;
+    DynamicJsonDocument doc(capacity);
+
+    DeserializationError error = deserializeJson(doc, payload);
+
+    if (error){
+      Serial.print("deserializeJson() failed: ");
+      Serial.println(error.c_str());
+      return;
+    }
+
+
+
+    Serial.println(F("Response:"));
+    int idActuador_alarma_value = doc[0][("idActuador_alarma_value")].as<int>();
+    int idActuador = doc[0][("idActuador")].as<int>();
+    float value = doc[0]["value"].as<float>();
+    long timestamp = doc[0]["timestamp"].as<long>();
+
+    Serial.println("idActuador_alarma_value: " + String(idActuador_alarma_value));
+    Serial.println("idActuador: " + String(idActuador));
+    Serial.println("Valor: " + String(value));
+    Serial.println("timestamp: " + String(timestamp));
+
+  }
+}
+
+  void sendPostActuadorAlarmaValue(){
+    if (WiFi.status() == WL_CONNECTED){
+      HTTPClient http;
+      http.begin(client, SERVER_IP, SERVER_PORT, "/api/actuador/actuadorAlarmaValue", true);
+      http.addHeader("Content-Type", "application/json");
+
+      const size_t capacity = JSON_OBJECT_SIZE(3) + JSON_ARRAY_SIZE(2) + 60;
+      DynamicJsonDocument doc(capacity);
+      doc[0][("idActuador")]=2;
+      doc[0]["Valor"]=0.0;
+      doc[0]["timestamp"]=198327459238745;
+
+
+      String output;
+      serializeJson(doc, output);
+
+      int httpCode = http.PUT(output);
+
+      Serial.println("Response code: " + httpCode);
+
+      String payload = http.getString();
+
+      Serial.println("Resultado: " + payload);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+
+void sendGetActuadorLcdValue(){
+  if (WiFi.status() == WL_CONNECTED){
+    HTTPClient http;
+    http.begin(client, SERVER_IP, SERVER_PORT, "/api/actuador/actuadorLcdValue/1", true);
+    int httpCode = http.GET();
+
+    Serial.println("Response code: " + httpCode);
+
+    String payload = http.getString();
+
+    const size_t capacity = JSON_OBJECT_SIZE(5) + JSON_ARRAY_SIZE(5) + 1000;
+    DynamicJsonDocument doc(capacity);
+
+    DeserializationError error = deserializeJson(doc, payload);
+
+    if (error){
+      Serial.print("deserializeJson() failed: ");
+      Serial.println(error.c_str());
+      return;
+    }
+
+
+
+    Serial.println(F("Response:"));
+    int idActuador_LCD_value = doc[0][("idActuador_LCD_value")].as<int>();
+    int idActuador = doc[0][("idActuador")].as<int>();
+    String mensaje = doc[0]["mensaje"].as<char*>();
+    long timestamp = doc[0]["timestamp"].as<long>();
+
+    Serial.println("idActuador_LCD_value: " + String(idActuador_LCD_value));
+    Serial.println("idActuador: " + String(idActuador));
+    Serial.println("Mensaje: " + mensaje);
+    Serial.println("timestamp: " + String(timestamp));
+
+  }
+}
+  void sendPostActuadorLcdValue(){
+    if (WiFi.status() == WL_CONNECTED){
+      HTTPClient http;
+      http.begin(client, SERVER_IP, SERVER_PORT, "/api/actuador/actuadorLcdValue", true);
+      http.addHeader("Content-Type", "application/json");
+
+      const size_t capacity = JSON_OBJECT_SIZE(3) + JSON_ARRAY_SIZE(2) + 60;
+      DynamicJsonDocument doc(capacity);
+      doc[0][("idActuador")]=2;
+      doc[0]["mensaje"]="Todo bien";
+      doc[0]["timestamp"]=198327459238745;
+
+
+      String output;
+      serializeJson(doc, output);
+
+      int httpCode = http.PUT(output);
+
+      Serial.println("Response code: " + httpCode);
+
+      String payload = http.getString();
+
+      Serial.println("Resultado: " + payload);
+  }
+}
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+
+
+void sendGetSensorParticulaValue(){
+  if (WiFi.status() == WL_CONNECTED){
+    HTTPClient http;
+    http.begin(client, SERVER_IP, SERVER_PORT, "/api/sensor/particulas_values/1", true);
+    int httpCode = http.GET();
+
+    Serial.println("Response code: " + httpCode);
+
+    String payload = http.getString();
+
+    const size_t capacity = JSON_OBJECT_SIZE(5) + JSON_ARRAY_SIZE(5) + 1000;
+    DynamicJsonDocument doc(capacity);
+
+    DeserializationError error = deserializeJson(doc, payload);
+
+    if (error){
+      Serial.print("deserializeJson() failed: ");
+      Serial.println(error.c_str());
+      return;
+    }
+
+
+
+    Serial.println(F("Response:"));
+    int idSensor_particula_value = doc[0][("idSensor_particula_value")].as<int>();
+    int idSensor = doc[0][("idSensor")].as<int>();
+    float Particulas_1 = doc[0]["Particulas_1"].as<float>();
+    float Particulas_25 = doc[0]["Particulas_25"].as<float>();
+    float Particulas_10 = doc[0]["Particulas_10"].as<float>();
+    float accuracy = doc[0]["accuracy"].as<float>();
+    long timestamp = doc[0]["timestamp"].as<long>();
+
+    Serial.println("idSensor_particula_value: " + String(idSensor_particula_value));
+    Serial.println("idSensor: " + String(idSensor));
+    Serial.println("Particulas_1: " + String(Particulas_1));
+    Serial.println("Particulas_25: " + String(Particulas_25));
+    Serial.println("Particulas_10: " + String(Particulas_10));
+    Serial.println("accuracy: " + String(accuracy));
+    Serial.println("timestamp: " + String(timestamp));
+
+  }
+}
+  void sendPostSensorParticulaValue(){
+    if (WiFi.status() == WL_CONNECTED){
+      HTTPClient http;
+      http.begin(client, SERVER_IP, SERVER_PORT, "/api/sensor/particulas_values/", true);
+      http.addHeader("Content-Type", "application/json");
+
+      const size_t capacity = JSON_OBJECT_SIZE(3) + JSON_ARRAY_SIZE(2) + 60;
+      DynamicJsonDocument doc(capacity);
+      doc[0][("idSensor")]=2;
+      doc[0]["Particulas_1"]=10.0;
+      doc[0]["Particulas_25"]=15.0;
+      doc[0]["Particulas_10"]=19.0;
+      doc[0]["accuracy"]=19.0;
+      doc[0]["timestamp"]=198327459238745;
+
+
+      String output;
+      serializeJson(doc, output);
+
+      int httpCode = http.PUT(output);
+
+      Serial.println("Response code: " + httpCode);
+
+      String payload = http.getString();
+
+      Serial.println("Resultado: " + payload);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+
+void sendGetSensorDHT11Value(){
+  if (WiFi.status() == WL_CONNECTED){
+    HTTPClient http;
+    http.begin(client, SERVER_IP, SERVER_PORT, "/api/sensor/dht11_values/1", true);
+    int httpCode = http.GET();
+
+    Serial.println("Response code: " + httpCode);
+
+    String payload = http.getString();
+
+    const size_t capacity = JSON_OBJECT_SIZE(5) + JSON_ARRAY_SIZE(5) + 1000;
+    DynamicJsonDocument doc(capacity);
+
+    DeserializationError error = deserializeJson(doc, payload);
+
+    if (error){
+      Serial.print("deserializeJson() failed: ");
+      Serial.println(error.c_str());
+      return;
+    }
+
+
+
+    Serial.println(F("Response:"));
+    int idSensor_DHT11_value = doc[0][("idSensor_DHT11_value")].as<int>();
+    int idSensor = doc[0][("idSensor")].as<int>();
+    float Temperatura = doc[0]["Temperatura"].as<float>();
+    float Humedad = doc[0]["Humedad"].as<float>();
+    float accuracy = doc[0]["accuracy"].as<float>();
+    long timestamp = doc[0]["timestamp"].as<long>();
+
+    Serial.println("idSensor_DHT11_value: " + String(idSensor_DHT11_value));
+    Serial.println("idSensor: " + String(idSensor));
+    Serial.println("Temperatura: " + String(Temperatura));
+    Serial.println("Humedad: " + String(Humedad));
+    Serial.println("accuracy: " + String(accuracy));
+    Serial.println("timestamp: " + String(timestamp));
+
+  }
+}
+  void sendPostSensorDHT11Value(){
+    if (WiFi.status() == WL_CONNECTED){
+      HTTPClient http;
+      http.begin(client, SERVER_IP, SERVER_PORT, "/api/sensor/dht11_values/", true);
+      http.addHeader("Content-Type", "application/json");
+
+      const size_t capacity = JSON_OBJECT_SIZE(3) + JSON_ARRAY_SIZE(2) + 60;
+      DynamicJsonDocument doc(capacity);
+      doc[0][("idSensor")]=2;
+      doc[0]["Temperatura"]=10.0;
+      doc[0]["Humedad"]=15.0;
+      doc[0]["accuracy"]=19.0;
+      doc[0]["timestamp"]=198327459238745;
+
+
+      String output;
+      serializeJson(doc, output);
+
+      int httpCode = http.PUT(output);
+
+      Serial.println("Response code: " + httpCode);
+
+      String payload = http.getString();
+
+      Serial.println("Resultado: " + payload);
+  }
+}
 
