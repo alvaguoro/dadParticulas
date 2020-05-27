@@ -1,0 +1,1 @@
+SELECT * FROM particulas.sensor_dht11_value;
