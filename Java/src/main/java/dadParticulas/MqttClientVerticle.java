@@ -13,7 +13,7 @@ import io.vertx.mqtt.MqttClientOptions;
 import io.vertx.mqtt.impl.MqttClientImpl;
 import tipos.ActuadorAlarmaValue;
 import tipos.ActuadorLcdValue;
-import tipos.Sensor_dht11_value;
+import tipos.Sensor_DHT11_value;
 import tipos.Sensor_particula_value;
 
 public class MqttClientVerticle extends AbstractVerticle {
@@ -82,7 +82,7 @@ public class MqttClientVerticle extends AbstractVerticle {
 										
 										Random random= new Random();
 										
-										Sensor_dht11_value sensorParticulaValue = new Sensor_dht11_value(1, 1, random.nextInt(35), random.nextInt(100), (float)10.0,i);
+										Sensor_DHT11_value sensorParticulaValue = new Sensor_DHT11_value(1, 1, random.nextInt(35), random.nextInt(100), (float)10.0,i);
 										mqttClient.publish(MqttServerVerticle.TOPIC_SENSORES_DHT11_VALUE,
 												Buffer.buffer(Json.encodePrettily(sensorParticulaValue)), MqttQoS.AT_LEAST_ONCE, false, true);	
 								});

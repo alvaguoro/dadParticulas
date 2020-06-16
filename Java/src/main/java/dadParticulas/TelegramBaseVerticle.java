@@ -1,7 +1,5 @@
 package dadParticulas;
 
-import java.util.ArrayList;
-
 import org.schors.vertx.telegram.bot.LongPollingReceiver;
 import org.schors.vertx.telegram.bot.TelegramBot;
 import org.schors.vertx.telegram.bot.TelegramOptions;
@@ -17,55 +15,64 @@ import io.vertx.ext.web.client.WebClient;
 import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.mysqlclient.MySQLPool;
 import io.vertx.sqlclient.PoolOptions;
-import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowSet;
-import tipos.Sensor;
-
-public class TelegramBaseVerticle extends AbstractVerticle{
+public class TelegramBaseVerticle extends AbstractVerticle {
 		 
 		private TelegramBot bot;
+		private Float Temperatura;
+		private Float Humedad;
 		private MySQLPool mySQLPool;	
-		@Override
+		private String nombre="";
 		
 		public void start(Promise<Void> future) {
 			MySQLConnectOptions mySQLConnectOptions = new MySQLConnectOptions().setPort(3306).setHost("localhost")
-					.setDatabase("particulas").setUser("root").setPassword("8419");
+					.setDatabase("particulas").setUser("root").setPassword("MEllamoeduar");
 			PoolOptions poolOptions = new PoolOptions().setMaxSize(5);
 			mySQLPool = MySQLPool.pool(vertx, mySQLConnectOptions, poolOptions);
 				
 				
 
-
+			
 		
 			TelegramOptions telegramOptioms= new TelegramOptions()
 					.setBotName("ParticulasDADbot")
 					.setBotToken("1175617937:AAHQiZfuCTV9Vx400OkMY1G5fPaxWr6sWTQ");
-			bot= TelegramBot.create(vertx,telegramOptioms)
-					.receiver(new LongPollingReceiver().onUpdate(handler->{
 						
-//	SALUDO
-						if(handler.getMessage().getText().toLowerCase().contains("hola")) {
-							bot.sendMessage(new SendMessage()
-									.setText("Hola "+ handler.getMessage().getFrom().getFirstName()+ " ¿en que puedo ayudarte?")
-									.setChatId(handler.getMessage().getChatId()));
-
-//  GET_SENSOR
-						}else if(handler.getMessage().getText().toLowerCase().contains("sensor")) {
-							String num="";
-							String numeros=handler.getMessage().getText().toString();
-							String [] lista=numeros.split("");
 							
 							
-							for(int i=0;i<lista.length;i++) {
-								if(lista[i].contains("0")||lista[i].contains("1")||lista[i].contains("2")||lista[i].contains("3")||
-										lista[i].contains("4")||lista[i].contains("5")||lista[i].contains("6")||lista[i].contains("7")||
-										lista[i].contains("8")||lista[i].contains("9")) {
-									num=num+lista[i];
+						
+						bot= TelegramBot.create(vertx,telegramOptioms)
+								.receiver(new LongPollingReceiver().onUpdate(handler->{
+						if(handler.getMessage().getText().toLowerCase().contains("borrar tablas")) {
+							WebClient client =WebClient.create(vertx);
+							client.delete(8082,"localhost",
+									"/api/restaurarValues")
+							.send(ar->{
+								if(ar.succeeded()) {
+								
+										
+										 bot.sendMessage(new SendMessage()
+												 .setText("Tablas borradas")
+													.setChatId(handler.getMessage().getChatId()));
+								}else {
+									bot.sendMessage(new SendMessage()
+											.setText("Algo no ha salido bien")
+											.setChatId(handler.getMessage().getChatId()));
 								}
-							}
+							});;
+						}else if(handler.getMessage().getText().toLowerCase().contains("hola")) {
+							bot.sendMessage(new SendMessage()
+									.setText("Hola "+ handler.getMessage().getFrom().getFirstName()+ " Puedo darte informacion sobre el tiempo y el numero de particulas que hay en el aire, primero dime "
+											+ "que estacion quieres saber la informacion: Hospital o Casa")
+									.setChatId(handler.getMessage().getChatId()));
+						
+								
+							
+//  GET_SENSOR
+						}else if(handler.getMessage().getText().toLowerCase().contains("casa")) {
+
 								WebClient client =WebClient.create(vertx);
-								client.get(8081,"localhost",
-										"/api/sensor/"+num)
+								client.get(8082,"localhost",
+										"/api/sensor/DHT11_values/1")
 								.send(ar->{
 									if(ar.succeeded()) {
 									
@@ -73,18 +80,40 @@ public class TelegramBaseVerticle extends AbstractVerticle{
 											System.out.println(response);
 											JsonArray list= response.bodyAsJsonArray();
 											JsonObject sensor=list.getJsonObject(list.size()-1);
-											Integer id= sensor.getInteger("idSensor");
-											 String tipo= sensor.getString("type");
-											 String nombre= sensor.getString("name");
-											 Integer idD= sensor.getInteger("idDevice");
-											 String ubi= sensor.getString("ubicacion");
+											System.out.println(sensor);
+											Temperatura= sensor.getFloat("temperatura");
+											Humedad= sensor.getFloat("humedad");
 											 bot.sendMessage(new SendMessage()
-													 .setText("Sensor:\n"
-																+"id: "+id+"\n"
-																+"tipo: "+tipo+"\n"
-																+"nombre: "+nombre+"\n"
-																+"idDevice: "+idD+"\n"
-																+"ubicacion: "+ubi+"\n"
+													 .setText("Sensor Casa:\n"
+																+"Temperatura: "+Temperatura+"\n"
+																+"Humedad: "+Humedad+"\n"
+																)
+														.setChatId(handler.getMessage().getChatId()));
+									}else {
+										bot.sendMessage(new SendMessage()
+												.setText("Algo no ha salido bien, vuelva a escribir el actuador que quiere leer")
+												.setChatId(handler.getMessage().getChatId()));
+									}
+								});;
+								
+								WebClient client2 =WebClient.create(vertx);
+								client2.get(8082,"localhost",
+										"/api/sensor/particulas_values/2")
+								.send(ar->{
+									if(ar.succeeded()) {
+									
+											HttpResponse<Buffer> response= ar.result();
+											System.out.println(response);
+											JsonArray list= response.bodyAsJsonArray();
+											JsonObject sensor=list.getJsonObject(list.size()-1);
+											Float Particulas_1= sensor.getFloat("particulas_1");
+											Float Particulas_25= sensor.getFloat("particulas_25");
+											Float Particulas_10= sensor.getFloat("particulas_10");
+											 bot.sendMessage(new SendMessage()
+													 .setText("Niveles de particulas\n\n"
+															 +"Particulas 1mm: "+Particulas_1+"\n"
+																+"Particulas 2,5mm: "+Particulas_25+"\n"
+																+"Particulas 10mm: "+Particulas_10+"\n"
 																)
 														.setChatId(handler.getMessage().getChatId()));
 									}else {
@@ -94,46 +123,62 @@ public class TelegramBaseVerticle extends AbstractVerticle{
 									}
 								});;
 //  GET_Actuador
-						}else if(handler.getMessage().getText().toLowerCase().contains("actuador")) {
-							String num="";
-							String numeros=handler.getMessage().getText().toString();
-							String [] lista=numeros.split("");
-							
-							
-							for(int i=0;i<lista.length;i++) {
-								if(lista[i].contains("0")||lista[i].contains("1")||lista[i].contains("2")||lista[i].contains("3")||
-										lista[i].contains("4")||lista[i].contains("5")||lista[i].contains("6")||lista[i].contains("7")||
-										lista[i].contains("8")||lista[i].contains("9")) {
-									num=num+lista[i];
-								}
-							}
-								WebClient client =WebClient.create(vertx);
-								client.get(8081,"localhost",
-										"/api/actuador/"+num)
+						
+								WebClient client3 =WebClient.create(vertx);
+								client3.get(8082,"localhost",
+										"/api/actuador/actuadorAlarmaValue/1")
 								.send(ar->{
 									if(ar.succeeded()) {
 									
 											HttpResponse<Buffer> response= ar.result();
 											System.out.println(response);
 											JsonArray list= response.bodyAsJsonArray();
-											JsonObject sensor=list.getJsonObject(list.size()-1);
-											Integer id= sensor.getInteger("idActuador");
-											 String tipo= sensor.getString("type");
-											 String nombre= sensor.getString("name");
-											 Integer idD= sensor.getInteger("idDevice");
-											 String ubi= sensor.getString("ubicacion");
+											JsonObject actuador=list.getJsonObject(list.size()-1);
+											Float value= actuador.getFloat("value");
+											String mensaje="";
+											if(value==1.0) {
+												mensaje="Los niveles de particulas son mayores a a los recomendados"; 
+											}
+											if(value==2.0) {
+												mensaje="Los niveles de particulas son muy perjudiciales"; 
+											}
+											if(value==0.0) {
+												mensaje="Los niveles de particulas son buenos"; 
+											}
 											 bot.sendMessage(new SendMessage()
-													 .setText("Actuador:\n"
-																+"id: "+id+"\n"
-																+"tipo: "+tipo+"\n"
-																+"nombre: "+nombre+"\n"
-																+"idDevice: "+idD+"\n"
-																+"ubicacion: "+ubi+"\n"
+													 .setText(mensaje
 																)
 														.setChatId(handler.getMessage().getChatId()));
 									}else {
 										bot.sendMessage(new SendMessage()
 												.setText("Algo no ha salido bien, vuelva a escribir el actuador que quiere leer")
+												.setChatId(handler.getMessage().getChatId()));
+									}
+								});;
+								WebClient client4 =WebClient.create(vertx);
+								client4.get(80,"api.openweathermap.org",
+										"/data/2.5/forecast?id=2519233&APPID=b4cbd393aaeabba55ca4b12efdabd913&units=metric")
+								.send(ar->{
+									if(ar.succeeded()) {
+										
+											HttpResponse<Buffer> response= ar.result();
+											JsonObject object= response.bodyAsJsonObject();
+											JsonArray list= object.getJsonArray("list");
+											JsonObject lastWeather= list.getJsonObject(list.size()-1);
+											String weather= lastWeather.getJsonArray("weather").getJsonObject(0).getString("description");
+											Integer clouds= lastWeather.getJsonObject("clouds").getInteger("all");
+											//Float description= lastWeather.getJsonObject("main").getJsonArray("weather").getFloat(2);
+										bot.sendMessage(new SendMessage()
+												.setText("El tiempo :\n"
+														+"Temperatura: "+Temperatura+"\n"
+														+"Humedad: "+Humedad+"\n"
+														+"Nubes: "+clouds+" % \n"
+														+"El dia sera: "+weather
+														)
+												.setChatId(handler.getMessage().getChatId()));
+									}else {
+										bot.sendMessage(new SendMessage()
+												.setText("Algo no ha salido bien")
 												.setChatId(handler.getMessage().getChatId()));
 									}
 								});;
@@ -143,6 +188,7 @@ public class TelegramBaseVerticle extends AbstractVerticle{
 									.setChatId(handler.getMessage().getChatId()));
 						}
 					}));
+						
 			bot.start();
 		}
 	
